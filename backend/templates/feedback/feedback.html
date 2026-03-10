@@ -1,0 +1,79 @@
+{% extends "base/base.html" %}
+{% block title %}Feedback – PerfectPair{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Feedback</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <!-- Submit form -->
+    <div class="bg-white rounded-2xl shadow-md p-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Submit Feedback</h2>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select name="category" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+            <option value="general">General Feedback</option>
+            <option value="bug">Bug Report</option>
+            <option value="feature">Feature Request</option>
+            <option value="complaint">Complaint</option>
+            <option value="suggestion">Suggestion</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+          <input type="text" name="subject" required
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"
+            placeholder="Brief subject...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+          <textarea name="message" rows="4" required minlength="10"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"
+            placeholder="Your feedback (min 10 characters)..."></textarea>
+        </div>
+        <button type="submit"
+          class="w-full py-2.5 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 transition text-sm font-medium">
+          Submit
+        </button>
+      </form>
+    </div>
+
+    <!-- History -->
+    <div>
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Your Feedback History</h2>
+      {% if feedbacks %}
+      <div class="space-y-4">
+        {% for fb in feedbacks %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-800">{{ fb.subject }}</span>
+            <span class="px-2 py-0.5 text-xs rounded-full font-medium
+              {% if fb.status == 'pending' %}bg-yellow-100 text-yellow-700
+              {% elif fb.status == 'reviewed' %}bg-blue-100 text-blue-700
+              {% else %}bg-green-100 text-green-700{% endif %}">
+              {{ fb.get_status_display }}
+            </span>
+          </div>
+          <span class="inline-block px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600 mb-2">{{ fb.get_category_display }}</span>
+          <p class="text-sm text-gray-600">{{ fb.message|truncatewords:30 }}</p>
+          <p class="text-xs text-gray-400 mt-2">{{ fb.created_at|date:"M d, Y H:i" }}</p>
+
+          {% if fb.admin_response %}
+          <div class="mt-3 bg-blue-50 rounded-lg p-3">
+            <p class="text-xs font-semibold text-blue-700 mb-1">Admin Response:</p>
+            <p class="text-sm text-blue-800">{{ fb.admin_response }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-gray-400 bg-white rounded-xl p-6 text-center">No feedback submitted yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

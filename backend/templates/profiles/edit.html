@@ -1,0 +1,127 @@
+{% extends "base/base.html" %}
+{% block title %}Edit Profile – PerfectPair{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">Edit Profile</h1>
+
+  <div class="bg-white rounded-2xl shadow-md p-6 sm:p-8">
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Photo -->
+      <div class="flex items-center gap-6">
+        {% if profile and profile.photo %}
+        <img src="{{ profile.photo.url }}" class="w-20 h-20 rounded-full object-cover border-2 border-red-200">
+        {% else %}
+        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-red-200 to-pink-200 flex items-center justify-center">
+          <span class="text-2xl font-bold text-white">{{ user.first_name|first|upper|default:user.username|first|upper }}</span>
+        </div>
+        {% endif %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
+          <input type="file" name="photo" accept="image/*"
+            class="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-red-50 file:text-red-600 hover:file:bg-red-100">
+          <p class="text-xs text-gray-400 mt-1">Max 5 MB. JPG, PNG.</p>
+        </div>
+      </div>
+
+      <hr class="border-gray-200">
+
+      <!-- Name -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+          <input type="text" name="first_name" value="{{ user.first_name }}" required
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+          <input type="text" name="last_name" value="{{ user.last_name }}" required
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" name="email" value="{{ user.email }}"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <input type="text" name="location" value="{{ profile.location|default:'' }}" placeholder="City, State, Country"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Height (ft)</label>
+          <input type="number" name="height" value="{{ profile.height|default:'' }}" step="0.01" min="3" max="8"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Occupation</label>
+          <input type="text" name="occupation" value="{{ profile.occupation|default:'' }}"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Education</label>
+          <input type="text" name="education" value="{{ profile.education|default:'' }}"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">About</label>
+        <textarea name="bio" rows="3"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm"
+          placeholder="Tell others about yourself...">{{ profile.about|default:'' }}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Desired Partner Traits</label>
+        <textarea name="desired_partner_traits" rows="3"
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm"
+          placeholder="What are you looking for in a partner?">{{ profile.desired_partner_traits|default:'' }}</textarea>
+      </div>
+
+      <button type="submit"
+        class="w-full py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold rounded-lg shadow-lg hover:from-red-700 hover:to-pink-700 transition">
+        Save Changes
+      </button>
+    </form>
+  </div>
+
+  <!-- Change Password -->
+  <div class="bg-white rounded-2xl shadow-md p-6 sm:p-8 mt-8">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Change Password</h2>
+    <form method="post" action="{% url 'accounts:change_password' %}" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+        <input type="password" name="old_password" required
+          class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 transition text-sm">
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+          <input type="password" name="new_password" required minlength="8"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 transition text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+          <input type="password" name="confirm_password" required
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 transition text-sm">
+        </div>
+      </div>
+      <button type="submit"
+        class="px-6 py-2.5 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition text-sm font-medium">
+        Change Password
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

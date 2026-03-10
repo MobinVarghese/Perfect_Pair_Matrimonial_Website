@@ -1,0 +1,98 @@
+{% extends "base/base.html" %}
+{% block title %}Notifications – PerfectPair{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-2xl font-bold text-gray-800 mb-6">
+    Notifications
+    {% if pending_count %}
+    <span class="ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-700 font-medium">{{ pending_count }} pending</span>
+    {% endif %}
+  </h1>
+
+  <!-- Received Interests -->
+  <div class="mb-10">
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">Received Interests</h2>
+    {% if received_interests %}
+    <div class="space-y-4">
+      {% for interest in received_interests %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          {% if interest.sender.profile.photo %}
+          <img src="{{ interest.sender.profile.photo.url }}" class="w-12 h-12 rounded-full object-cover">
+          {% else %}
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-200 to-pink-200 flex items-center justify-center">
+            <span class="text-lg font-bold text-white">{{ interest.sender.first_name|first|upper|default:interest.sender.username|first|upper }}</span>
+          </div>
+          {% endif %}
+          <div>
+            <p class="font-semibold text-gray-800">{{ interest.sender.get_full_name|default:interest.sender.username }}</p>
+            <p class="text-sm text-gray-500">{{ interest.created_at|timesince }} ago</p>
+            {% if interest.message %}<p class="text-sm text-gray-600 mt-1 italic">"{{ interest.message|truncatewords:15 }}"</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          {% if interest.status == 'pending' %}
+          <form method="post" action="{% url 'matchmaking:respond_interest' interest_id=interest.pk %}" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="accept">
+            <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition">Accept</button>
+          </form>
+          <form method="post" action="{% url 'matchmaking:respond_interest' interest_id=interest.pk %}" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition">Decline</button>
+          </form>
+          {% elif interest.status == 'accepted' %}
+          <span class="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full font-medium">Accepted</span>
+          {% elif interest.status == 'rejected' %}
+          <span class="px-3 py-1 bg-gray-100 text-gray-500 text-sm rounded-full font-medium">Declined</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-400 bg-white rounded-xl p-6 text-center">No interest requests received yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Sent Interests -->
+  <div>
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">Sent Interests</h2>
+    {% if sent_interests %}
+    <div class="space-y-4">
+      {% for interest in sent_interests %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          {% if interest.receiver.profile.photo %}
+          <img src="{{ interest.receiver.profile.photo.url }}" class="w-12 h-12 rounded-full object-cover">
+          {% else %}
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-200 to-indigo-200 flex items-center justify-center">
+            <span class="text-lg font-bold text-white">{{ interest.receiver.first_name|first|upper|default:interest.receiver.username|first|upper }}</span>
+          </div>
+          {% endif %}
+          <div>
+            <p class="font-semibold text-gray-800">{{ interest.receiver.get_full_name|default:interest.receiver.username }}</p>
+            <p class="text-sm text-gray-500">Sent {{ interest.created_at|timesince }} ago</p>
+          </div>
+        </div>
+        <div>
+          {% if interest.status == 'pending' %}
+          <span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full font-medium">Pending</span>
+          {% elif interest.status == 'accepted' %}
+          <span class="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full font-medium">Accepted</span>
+          {% elif interest.status == 'rejected' %}
+          <span class="px-3 py-1 bg-red-100 text-red-600 text-sm rounded-full font-medium">Declined</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-400 bg-white rounded-xl p-6 text-center">You haven't sent any interest requests yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base/base.html" %}
+{% block title %}Chat with {{ other_user.get_full_name|default:other_user.username }} – PerfectPair{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col" style="height: calc(100vh - 80px);">
+
+  <!-- Chat header -->
+  <div class="bg-white rounded-t-2xl shadow-sm border-b border-gray-200 px-5 py-3 flex items-center gap-4">
+    <a href="{% url 'messaging:inbox' %}" class="text-gray-500 hover:text-gray-700 transition">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+
+    {% if other_user.profile.photo %}
+    <img src="{{ other_user.profile.photo.url }}" class="w-10 h-10 rounded-full object-cover">
+    {% else %}
+    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-200 to-pink-200 flex items-center justify-center">
+      <span class="text-sm font-bold text-white">{{ other_user.first_name|first|upper|default:other_user.username|first|upper }}</span>
+    </div>
+    {% endif %}
+
+    <div>
+      <a href="{% url 'profiles:profile_detail' pk=other_user.profile.pk %}" class="font-semibold text-gray-800 hover:text-red-600 transition">
+        {{ other_user.get_full_name|default:other_user.username }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages area (scrollable) -->
+  <div id="chat-messages" class="flex-1 overflow-y-auto bg-gray-50 px-5 py-4 space-y-3"
+       hx-get="{% url 'messaging:fetch_new_messages' conversation_id=conversation.pk %}?last_id={{ chat_messages.last.pk|default:0 }}"
+       hx-trigger="every 3s"
+       hx-swap="beforeend"
+       hx-target="#chat-messages">
+
+    {% if not chat_messages %}
+    <div id="empty-chat-msg" class="text-center py-12">
+      <p class="text-gray-400">No messages yet. Say hello!</p>
+    </div>
+    {% endif %}
+
+    {% for msg in chat_messages %}
+    {% if msg.sender == request.user %}
+    <!-- My message -->
+    <div class="flex justify-end" data-msg-id="{{ msg.pk }}">
+      <div class="max-w-xs lg:max-w-md">
+        <div class="bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
+          <p class="text-sm">{{ msg.content }}</p>
+        </div>
+        <p class="text-xs text-gray-400 text-right mt-1">{{ msg.created_at|date:"H:i" }}</p>
+      </div>
+    </div>
+    {% else %}
+    <!-- Their message -->
+    <div class="flex justify-start" data-msg-id="{{ msg.pk }}">
+      <div class="max-w-xs lg:max-w-md">
+        <div class="bg-white text-gray-800 rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm border border-gray-100">
+          <p class="text-sm">{{ msg.content }}</p>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">{{ msg.created_at|date:"H:i" }}</p>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Send message form -->
+  <div class="bg-white rounded-b-2xl shadow-sm border-t border-gray-200 px-4 py-3">
+    <form hx-post="{% url 'messaging:send_message' conversation_id=conversation.pk %}"
+          hx-target="#chat-messages"
+          hx-swap="beforeend"
+          hx-on::after-request="this.reset(); scrollChat();"
+          class="flex items-center gap-3">
+      {% csrf_token %}
+      <input type="text" name="content" required autocomplete="off" placeholder="Type a message..."
+        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-red-500 focus:border-red-500 transition text-sm"
+        id="msg-input">
+      <button type="submit"
+        class="p-2.5 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-full hover:from-red-700 hover:to-pink-700 transition flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function scrollChat() {
+    var el = document.getElementById('chat-messages');
+    el.scrollTop = el.scrollHeight;
+    // Remove empty state
+    var empty = document.getElementById('empty-chat-msg');
+    if (empty) empty.remove();
+  }
+  // Scroll on page load
+  scrollChat();
+
+  // Update the polling URL with the latest message ID after each poll
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target && evt.detail.target.id === 'chat-messages') {
+      scrollChat();
+      // Get the last data-msg-id
+      var msgs = document.querySelectorAll('#chat-messages [data-msg-id]');
+      if (msgs.length > 0) {
+        var lastId = msgs[msgs.length - 1].getAttribute('data-msg-id');
+        var chatDiv = document.getElementById('chat-messages');
+        var currentUrl = chatDiv.getAttribute('hx-get');
+        chatDiv.setAttribute('hx-get', currentUrl.replace(/last_id=\d+/, 'last_id=' + lastId));
+        htmx.process(chatDiv);
+      }
+    }
+  });
+</script>
+{% endblock %}

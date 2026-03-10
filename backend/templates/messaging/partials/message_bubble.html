@@ -1,0 +1,19 @@
+{% if msg.sender == request.user %}
+<div class="flex justify-end" data-msg-id="{{ msg.pk }}">
+  <div class="max-w-xs lg:max-w-md">
+    <div class="bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
+      <p class="text-sm">{{ msg.content }}</p>
+    </div>
+    <p class="text-xs text-gray-400 text-right mt-1">{{ msg.created_at|date:"H:i" }}</p>
+  </div>
+</div>
+{% else %}
+<div class="flex justify-start" data-msg-id="{{ msg.pk }}">
+  <div class="max-w-xs lg:max-w-md">
+    <div class="bg-white text-gray-800 rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm border border-gray-100">
+      <p class="text-sm">{{ msg.content }}</p>
+    </div>
+    <p class="text-xs text-gray-400 mt-1">{{ msg.created_at|date:"H:i" }}</p>
+  </div>
+</div>
+{% endif %}

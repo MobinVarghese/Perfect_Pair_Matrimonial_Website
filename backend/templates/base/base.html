@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}PerfectPair{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+    .card-hover { transition: all 0.3s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,.1),0 10px 10px -5px rgba(0,0,0,.04); }
+    .gradient-text {
+      background: linear-gradient(to right, #dc2626, #db2777);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="bg-white shadow-lg sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+
+      <!-- Logo -->
+      <div class="flex items-center">
+        <a href="{% url 'profiles:home' %}" class="flex items-center">
+          <div class="bg-gradient-to-r from-red-600 to-pink-600 rounded-full p-2 mr-3">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <span class="text-2xl font-bold gradient-text">PerfectPair</span>
+        </a>
+      </div>
+
+      <!-- Desktop Nav Links -->
+      <div class="hidden md:flex items-center space-x-1">
+        <a href="{% url 'profiles:home' %}"
+           class="px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150 font-medium text-sm">
+          Browse Profiles
+        </a>
+
+        <!-- Favorites -->
+        <a href="{% url 'interactions:favorites' %}"
+           class="px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150"
+           title="My Favorites">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+          </svg>
+        </a>
+
+        <!-- Messages -->
+        <a href="{% url 'messaging:inbox' %}"
+           class="relative px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150"
+           title="Messages">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          {% if unread_messages_count > 0 %}
+          <span class="absolute top-1 right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full leading-none">
+            {{ unread_messages_count }}
+          </span>
+          {% endif %}
+        </a>
+
+        <!-- Notifications with badge -->
+        <a href="{% url 'matchmaking:notifications' %}"
+           class="relative px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150"
+           title="Notifications">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          {% if pending_interests_count > 0 %}
+          <span class="absolute top-1 right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 rounded-full leading-none">
+            {{ pending_interests_count }}
+          </span>
+          {% endif %}
+        </a>
+
+        <!-- Feedback -->
+        <a href="{% url 'feedback:feedback' %}"
+           class="px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150"
+           title="Feedback">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+          </svg>
+        </a>
+
+        {% if user.is_admin %}
+        <!-- Admin -->
+        <a href="{% url 'moderation:admin_dashboard' %}"
+           class="px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150 font-medium text-sm flex items-center">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+          Admin
+        </a>
+        {% endif %}
+
+        <!-- User dropdown -->
+        <div class="relative" id="user-menu-container">
+          <button id="user-menu-btn"
+                  class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition duration-150">
+            <div class="h-8 w-8 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center flex-shrink-0">
+              <span class="text-white font-semibold text-sm">
+                {{ user.first_name|first|upper|default:user.username|first|upper }}
+              </span>
+            </div>
+            <span class="text-gray-700 font-medium text-sm">{{ user.first_name|default:user.username }}</span>
+            <svg id="chevron-icon" class="w-4 h-4 text-gray-500 transition-transform duration-200"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div id="user-dropdown"
+               class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 border border-gray-200 animate-fadeIn z-50">
+            <a href="{% url 'profiles:edit_profile' %}"
+               class="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150">
+              Edit Profile
+            </a>
+            <hr class="my-1 border-gray-200">
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-150">
+                Sign Out
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <div class="md:hidden flex items-center">
+        <button id="mobile-menu-btn" class="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile nav -->
+  <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200">
+    <div class="px-4 py-3 space-y-1">
+      <a href="{% url 'profiles:home' %}"
+         class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Browse Profiles</a>
+      <a href="{% url 'interactions:favorites' %}"
+         class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Favorites</a>
+      <a href="{% url 'messaging:inbox' %}"
+         class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">
+        Messages
+        {% if unread_messages_count > 0 %}
+        <span class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
+          {{ unread_messages_count }}
+        </span>
+        {% endif %}
+      </a>
+      <a href="{% url 'matchmaking:notifications' %}"
+         class="flex items-center px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">
+        Notifications
+        {% if pending_interests_count > 0 %}
+        <span class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full">
+          {{ pending_interests_count }}
+        </span>
+        {% endif %}
+      </a>
+      <a href="{% url 'feedback:feedback' %}"
+         class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Feedback</a>
+      {% if user.is_admin %}
+      <a href="{% url 'moderation:admin_dashboard' %}"
+         class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Admin</a>
+      {% endif %}
+      <a href="{% url 'profiles:edit_profile' %}"
+         class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Edit Profile</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">
+          Sign Out
+        </button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ FLASH MESSAGES ═══ -->
+{% if messages %}
+<div class="fixed top-20 right-4 z-50 space-y-2 max-w-sm w-full px-4" id="flash-messages">
+  {% for message in messages %}
+  <div class="bg-white border-l-4
+    {% if message.tags == 'error' %}border-red-500{% elif message.tags == 'warning' %}border-yellow-500{% else %}border-green-500{% endif %}
+    rounded-lg shadow-lg p-4 animate-fadeIn flex items-start">
+    <div class="flex-shrink-0 mr-3">
+      {% if message.tags == 'error' %}
+      <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+      </svg>
+      {% else %}
+      <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+      </svg>
+      {% endif %}
+    </div>
+    <p class="text-sm text-gray-700">{{ message }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<main class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="bg-white border-t border-gray-200 mt-auto">
+  <div class="max-w-7xl mx-auto px-4 py-6 text-center">
+    <p class="text-gray-500 text-sm">
+      © 2024 <span class="gradient-text font-semibold">PerfectPair</span>. Find your perfect match.
+    </p>
+  </div>
+</footer>
+
+<script>
+  // User dropdown toggle
+  const menuBtn = document.getElementById('user-menu-btn');
+  const dropdown = document.getElementById('user-dropdown');
+  const chevron = document.getElementById('chevron-icon');
+  if (menuBtn) {
+    menuBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdown.classList.toggle('hidden');
+      chevron.style.transform = dropdown.classList.contains('hidden') ? '' : 'rotate(180deg)';
+    });
+    document.addEventListener('click', function() {
+      dropdown.classList.add('hidden');
+      chevron.style.transform = '';
+    });
+  }
+
+  // Mobile menu toggle
+  const mobileBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+  if (mobileBtn) {
+    mobileBtn.addEventListener('click', function() {
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+
+  // Auto-dismiss flash messages after 4s
+  setTimeout(function() {
+    var container = document.getElementById('flash-messages');
+    if (container) {
+      container.style.transition = 'opacity 0.5s';
+      container.style.opacity = '0';
+      setTimeout(function() { container.style.display = 'none'; }, 500);
+    }
+  }, 4000);
+</script>
+</body>
+</html>
