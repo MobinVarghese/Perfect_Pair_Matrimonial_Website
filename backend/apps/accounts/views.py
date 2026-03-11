@@ -21,7 +21,7 @@ User = get_user_model()
 def login_view(request):
     if request.user.is_authenticated:
         if request.user.is_superuser or request.user.is_admin:
-            return redirect('moderation:admin_dashboard')
+            return redirect('/admin/')
         return redirect('profiles:home')
 
     if request.method == 'POST':
@@ -52,7 +52,7 @@ def login_view(request):
             if next_url:
                 return redirect(next_url)
             if user.is_superuser or user.is_admin:
-                return redirect('moderation:admin_dashboard')
+                return redirect('/admin/')
             return redirect('profiles:home')
         else:
             return render(request, 'accounts/login.html', {

@@ -1,4 +1,5 @@
 import io
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -7,6 +8,7 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.conf import settings
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -242,6 +244,12 @@ def export_pdf_view(request):
     buffer.close()
     file_name = f"profiles_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
 
+    # Save to exports/ directory on the server
+    exports_dir = os.path.join(settings.BASE_DIR, '..', 'exports')
+    os.makedirs(exports_dir, exist_ok=True)
+    with open(os.path.join(exports_dir, file_name), 'wb') as f:
+        f.write(pdf_data)
+
     ExportLog.objects.create(
         admin=request.user, file_type='pdf',
         file_name=file_name, export_type='profiles',
@@ -283,6 +291,12 @@ def export_excel_view(request):
     buffer.close()
 
     file_name = f"profiles_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    # Save to exports/ directory on the server
+    exports_dir = os.path.join(settings.BASE_DIR, '..', 'exports')
+    os.makedirs(exports_dir, exist_ok=True)
+    with open(os.path.join(exports_dir, file_name), 'wb') as f:
+        f.write(excel_data)
 
     ExportLog.objects.create(
         admin=request.user, file_type='excel',
