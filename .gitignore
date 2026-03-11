@@ -16,10 +16,9 @@ __pycache__/
 *.log
 db.sqlite3
 db.sqlite3-journal
-media/*
-!media/.gitkeep
-!media/profile_photos/.gitkeep
-!media/documents/.gitkeep
+backend/media/**
+!backend/media/profile_photos/.gitkeep
+!backend/media/documents/.gitkeep
 staticfiles/
 *.pot
 *.pyc
