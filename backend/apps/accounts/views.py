@@ -20,6 +20,8 @@ User = get_user_model()
 
 def login_view(request):
     if request.user.is_authenticated:
+        if request.user.is_superuser or request.user.is_admin:
+            return redirect('moderation:admin_dashboard')
         return redirect('profiles:home')
 
     if request.method == 'POST':
@@ -47,7 +49,11 @@ def login_view(request):
                 })
             login(request, user)
             next_url = request.GET.get('next', '')
-            return redirect(next_url if next_url else 'profiles:home')
+            if next_url:
+                return redirect(next_url)
+            if user.is_superuser or user.is_admin:
+                return redirect('moderation:admin_dashboard')
+            return redirect('profiles:home')
         else:
             return render(request, 'accounts/login.html', {
                 'error': 'Invalid username or password.',
