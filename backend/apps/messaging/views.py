@@ -21,6 +21,11 @@ def _get_or_create_conversation(user1, user2):
 
 @login_required
 def inbox_view(request):
+    # Only Gold users with an active subscription can use messaging
+    if not request.user.has_active_gold_subscription():
+        messages.error(request, 'You need an active Gold subscription to access messages.')
+        return redirect('accounts:upgrade')
+
     conversations = Conversation.objects.filter(
         Q(user1=request.user) | Q(user2=request.user)
     ).select_related('user1', 'user1__profile', 'user2', 'user2__profile').order_by('-updated_at')
@@ -42,6 +47,10 @@ def inbox_view(request):
 
 @login_required
 def conversation_view(request, conversation_id):
+    if not request.user.has_active_gold_subscription():
+        messages.error(request, 'You need an active Gold subscription to access messages.')
+        return redirect('accounts:upgrade')
+
     conv = get_object_or_404(Conversation, pk=conversation_id)
 
     if request.user not in (conv.user1, conv.user2):
@@ -79,6 +88,9 @@ def send_message_view(request, conversation_id):
     if request.user not in (conv.user1, conv.user2):
         return HttpResponse('Access denied.', status=403)
 
+    if not request.user.has_active_gold_subscription():
+        return HttpResponse('Messaging requires an active Gold subscription.', status=403)
+
     interest = Interest.objects.filter(
         Q(sender=conv.user1, receiver=conv.user2) |
         Q(sender=conv.user2, receiver=conv.user1),
@@ -114,6 +126,9 @@ def fetch_new_messages_view(request, conversation_id):
     if request.user not in (conv.user1, conv.user2):
         return HttpResponse('', status=403)
 
+    if not request.user.has_active_gold_subscription():
+        return HttpResponse('', status=403)
+
     last_id = request.GET.get('last_id', '0')
     try:
         last_id = int(last_id)
@@ -136,6 +151,10 @@ def fetch_new_messages_view(request, conversation_id):
 
 @login_required
 def start_conversation_view(request, user_id):
+    if not request.user.has_active_gold_subscription():
+        messages.error(request, 'Upgrade to Gold to start conversations and send messages.')
+        return redirect('accounts:upgrade')
+
     other_user = get_object_or_404(User, pk=user_id)
 
     if other_user == request.user:

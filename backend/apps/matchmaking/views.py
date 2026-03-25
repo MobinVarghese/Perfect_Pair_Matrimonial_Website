@@ -14,6 +14,17 @@ User = get_user_model()
 @login_required
 def send_interest_view(request, user_id):
     if request.method == 'POST':
+        today = timezone.now().date()
+        sent_today = Interest.objects.filter(sender=request.user, created_at__date=today).count()
+        if request.user.has_active_gold_subscription():
+            max_daily = 15
+        else:
+            max_daily = 5
+
+        if sent_today >= max_daily:
+            messages.error(request, f'You have reached your daily limit of {max_daily} interest requests.')
+            return redirect('profiles:home')
+
         receiver = get_object_or_404(User, pk=user_id)
 
         if receiver == request.user:
@@ -90,4 +101,34 @@ def notifications_view(request):
         'received_interests': received_interests,
         'sent_interests': sent_interests,
         'pending_count': pending_count,
+    })
+
+
+@login_required
+def accepted_interests_view(request):
+    interests = Interest.objects.filter(
+        status='accepted'
+    ).filter(
+        Q(sender=request.user) | Q(receiver=request.user)
+    ).select_related('sender__profile', 'receiver__profile').order_by('-responded_at', '-created_at')
+
+    accepted_items = []
+    for interest in interests:
+        if interest.sender_id == request.user.id:
+            other_user = interest.receiver
+            direction = 'sent'
+        else:
+            other_user = interest.sender
+            direction = 'received'
+
+        other_profile = getattr(other_user, 'profile', None)
+        accepted_items.append({
+            'interest': interest,
+            'other_user': other_user,
+            'other_profile': other_profile,
+            'direction': direction,
+        })
+
+    return render(request, 'matchmaking/accepted_interests.html', {
+        'accepted_items': accepted_items,
     })

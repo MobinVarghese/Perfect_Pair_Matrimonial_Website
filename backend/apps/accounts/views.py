@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash, get_user_model
@@ -31,6 +31,9 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
+            # Ensure any expired subscriptions are downgraded on login
+            if hasattr(user, 'ensure_subscription_valid'):
+                user.ensure_subscription_valid(save=True)
             if user.is_blocked:
                 block_date = (
                     user.blocked_at.strftime('%Y-%m-%d') if user.blocked_at else 'Unknown'
@@ -44,7 +47,7 @@ def login_view(request):
                 })
             if not user.is_active:
                 return render(request, 'accounts/login.html', {
-                    'error': 'Your account is inactive. Please contact support.',
+                    'error': 'Your account is deactivated and scheduled for deletion.',
                     'username': username,
                 })
             login(request, user)
@@ -61,6 +64,42 @@ def login_view(request):
             })
 
     return render(request, 'accounts/login.html')
+
+
+@login_required
+def deactivate_account_view(request):
+    if request.method == 'POST':
+        user = request.user
+        now = timezone.now()
+        user.is_active = False
+        user.deactivated_at = now
+        user.scheduled_deletion_at = now + timedelta(days=30)
+        user.save(update_fields=['is_active', 'deactivated_at', 'scheduled_deletion_at'])
+        logout(request)
+        messages.info(request, 'Your account has been deactivated and scheduled for deletion in 30 days.')
+        return redirect('site_landing')
+
+    return render(request, 'accounts/deactivate_account.html')
+
+
+@login_required
+def upgrade_view(request):
+    """Dummy upgrade flow that simulates payment and upgrades to Gold."""
+    user = request.user
+    if hasattr(user, 'ensure_subscription_valid'):
+        user.ensure_subscription_valid(save=True)
+
+    if request.method == 'POST':
+        now = timezone.now()
+        end = now + timedelta(days=365)
+        user.subscription_type = user.SUBSCRIPTION_GOLD
+        user.subscription_start = now
+        user.subscription_end = end
+        user.save(update_fields=['subscription_type', 'subscription_start', 'subscription_end'])
+        messages.success(request, 'Your subscription has been upgraded to Gold for 1 year!')
+        return redirect('accounts:upgrade')
+
+    return render(request, 'accounts/upgrade.html')
 
 
 def logout_view(request):

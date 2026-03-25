@@ -30,16 +30,18 @@ User = get_user_model()
 @login_required
 def home_view(request):
     """Browse all profiles with search / filter."""
-    queryset = Profile.objects.select_related('user').exclude(user=request.user)
+    base_queryset = Profile.objects.select_related('user').exclude(user=request.user)
 
     try:
         user_gender = request.user.profile.gender.lower()
         if user_gender in ('m', 'male'):
-            queryset = queryset.filter(gender__in=['F', 'female'])
+            base_queryset = base_queryset.filter(gender__in=['female'])
         elif user_gender in ('f', 'female'):
-            queryset = queryset.filter(gender__in=['M', 'male'])
+            base_queryset = base_queryset.filter(gender__in=['male'])
     except Profile.DoesNotExist:
         pass
+
+    queryset = base_queryset
 
     q          = request.GET.get('q', '')
     gender     = request.GET.get('gender', '')
@@ -80,6 +82,57 @@ def home_view(request):
 
     queryset = queryset.order_by('-created_at')
 
+    # Recommended profiles based on user preferences.
+    # If preferences are not "complete" (same rule used by the navbar alert),
+    # show only the latest 5 profiles from the base opposite-gender queryset.
+    recommended_profiles = []
+    user_profile = getattr(request.user, 'profile', None)
+    if user_profile is not None:
+        rec_qs = base_queryset
+
+        def _split_prefs(value):
+            return [v.strip() for v in (value or '').split(',') if v.strip()]
+
+        preferred_locations = _split_prefs(user_profile.preferred_locations)
+        preferred_religions = _split_prefs(user_profile.preferred_religions)
+        preferred_education = _split_prefs(user_profile.preferred_education)
+
+        preferences_complete = (
+            len(preferred_locations) >= 2 and
+            len(preferred_religions) >= 2 and
+            len(preferred_education) >= 2
+        )
+
+        if not preferences_complete:
+            recommended_profiles = list(
+                rec_qs.order_by('-created_at')[:5]
+            )
+        else:
+            locations = preferred_locations
+            if locations:
+                loc_q = Q()
+                for loc in locations:
+                    loc_q |= Q(location__icontains=loc)
+                rec_qs = rec_qs.filter(loc_q)
+
+            religions = preferred_religions
+            if religions:
+                rec_qs = rec_qs.filter(religion__in=[r.lower() for r in religions])
+
+            educations = preferred_education
+            if educations:
+                edu_q = Q()
+                for edu in educations:
+                    edu_q |= Q(education__icontains=edu)
+                rec_qs = rec_qs.filter(edu_q)
+
+            if user_profile.age_min is not None:
+                rec_qs = rec_qs.filter(age__gte=user_profile.age_min)
+            if user_profile.age_max is not None:
+                rec_qs = rec_qs.filter(age__lte=user_profile.age_max)
+
+            recommended_profiles = list(rec_qs.distinct().order_by('-created_at')[:12])
+
     paginator = Paginator(queryset, 12)
     page_number = request.GET.get('page', 1)
     profiles = paginator.get_page(page_number)
@@ -104,6 +157,7 @@ def home_view(request):
 
     return render(request, 'profiles/home.html', {
         'profiles': profiles,
+        'recommended_profiles': recommended_profiles,
         'favorited_ids': favorited_ids,
         'sent_accepted_ids': sent_accepted_ids,
         'sent_pending_ids': sent_pending_ids,
@@ -144,6 +198,38 @@ def edit_profile_view(request):
     user = request.user
     profile = getattr(user, 'profile', None)
 
+    locations = [
+        "Mumbai",
+        "Delhi",
+        "Bengaluru",
+        "Hyderabad",
+        "Chennai",
+        "Kolkata",
+        "Pune",
+        "Other",
+    ]
+
+    religions = [
+        ("hindu", "Hindu"),
+        ("muslim", "Muslim"),
+        ("christian", "Christian"),
+        ("sikh", "Sikh"),
+        ("buddhist", "Buddhist"),
+        ("jain", "Jain"),
+        ("other", "Other"),
+    ]
+
+    education_options = [
+        ("Bachelors", "Bachelors"),
+        ("Masters", "Masters"),
+        ("PhD", "PhD"),
+        ("Engineering", "Engineering"),
+        ("Medicine", "Medicine"),
+        ("Commerce", "Commerce"),
+        ("Arts", "Arts"),
+        ("Other", "Other"),
+    ]
+
     if request.method == 'POST':
         user.first_name = request.POST.get('first_name', '').strip()
         user.last_name  = request.POST.get('last_name', '').strip()
@@ -163,6 +249,26 @@ def edit_profile_view(request):
         profile.about                 = request.POST.get('bio', '').strip()
         profile.desired_partner_traits = request.POST.get('desired_partner_traits', '').strip()
 
+        pref_locations = request.POST.getlist('preferred_locations')
+        profile.preferred_locations = ','.join(pref_locations)
+
+        pref_religions = request.POST.getlist('preferred_religions')
+        profile.preferred_religions = ','.join(pref_religions)
+
+        pref_education = request.POST.getlist('preferred_education')
+        profile.preferred_education = ','.join(pref_education)
+
+        age_min_str = request.POST.get('age_min', '').strip()
+        age_max_str = request.POST.get('age_max', '').strip()
+        try:
+            profile.age_min = int(age_min_str) if age_min_str else None
+        except ValueError:
+            profile.age_min = None
+        try:
+            profile.age_max = int(age_max_str) if age_max_str else None
+        except ValueError:
+            profile.age_max = None
+
         height_str = request.POST.get('height', '')
         if height_str:
             try:
@@ -181,9 +287,33 @@ def edit_profile_view(request):
         messages.success(request, 'Profile updated successfully!')
         return redirect('profiles:edit_profile')
 
+    selected_locations = []
+    selected_religions = []
+    selected_education = []
+
+    if profile is not None:
+        if profile.preferred_locations:
+            selected_locations = [
+                loc.strip() for loc in profile.preferred_locations.split(',') if loc.strip()
+            ]
+        if profile.preferred_religions:
+            selected_religions = [
+                rel.strip() for rel in profile.preferred_religions.split(',') if rel.strip()
+            ]
+        if profile.preferred_education:
+            selected_education = [
+                edu.strip() for edu in profile.preferred_education.split(',') if edu.strip()
+            ]
+
     return render(request, 'profiles/edit.html', {
         'user': user,
         'profile': profile,
+        'locations': locations,
+        'religions': religions,
+        'education_options': education_options,
+        'selected_locations': selected_locations,
+        'selected_religions': selected_religions,
+        'selected_education': selected_education,
     })
 
 

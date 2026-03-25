@@ -4,6 +4,28 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+  <!-- Subscription status + quick upgrade -->
+  <div class="flex flex-wrap items-center justify-between mb-6 gap-3">
+    <div class="flex items-center space-x-2 text-sm">
+      <span class="text-gray-500">Your plan:</span>
+      {% if request.user.subscription_type == 'gold' %}
+      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+        GOLD
+      </span>
+      {% else %}
+      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">
+        SILVER
+      </span>
+      {% endif %}
+    </div>
+    {% if request.user.subscription_type != 'gold' %}
+    <a href="{% url 'accounts:upgrade' %}"
+       class="inline-flex items-center px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow hover:from-yellow-500 hover:to-orange-600 transition">
+      Upgrade to Gold for messaging features
+    </a>
+    {% endif %}
+  </div>
+
   <!-- Search & Filter Bar -->
   <div class="bg-white rounded-2xl shadow-md p-6 mb-8">
     <form method="get" class="space-y-4">
@@ -71,14 +93,91 @@
   </div>
 
   <!-- Results count -->
+  {% if recommended_profiles %}
+  <div class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold text-gray-800">Recommended for You</h2>
+      <span class="text-xs text-gray-400">Based on your saved preferences</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for profile in recommended_profiles %}
+      <div class="bg-white rounded-2xl shadow-md card-hover overflow-hidden">
+        <a href="{% url 'profiles:profile_detail' pk=profile.pk %}">
+          {% if profile.photo %}
+          <img src="{{ profile.photo.url }}" alt="{{ profile.name }}" class="w-full h-56 object-cover">
+          {% else %}
+          <div class="w-full h-56 bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center">
+            <span class="text-5xl font-bold text-red-300">{{ profile.name|first|upper }}</span>
+          </div>
+          {% endif %}
+        </a>
+        <div class="p-4">
+          <div class="flex items-start justify-between">
+            <div>
+              <a href="{% url 'profiles:profile_detail' pk=profile.pk %}" class="text-lg font-semibold text-gray-800 hover:text-red-600 transition">
+                {{ profile.name }}
+              </a>
+              <p class="text-sm text-gray-500">{{ profile.age }} yrs &bull; {{ profile.gender|capfirst }}</p>
+            </div>
+            <form method="post" action="{% url 'interactions:toggle_favorite' profile_id=profile.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'profiles:home' %}?{{ request.GET.urlencode }}">
+              <button type="submit" title="Toggle Favorite">
+                {% if profile.pk in favorited_ids %}
+                <svg class="w-6 h-6 text-red-500 fill-current" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                {% else %}
+                <svg class="w-6 h-6 text-gray-400 hover:text-red-500 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                {% endif %}
+              </button>
+            </form>
+          </div>
+
+          {% if profile.location %}
+          <p class="text-sm text-gray-500 mt-1 truncate">
+            <svg class="w-4 h-4 inline-block mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            {{ profile.location }}
+          </p>
+          {% endif %}
+
+          {% if profile.occupation %}
+          <p class="text-sm text-gray-500 truncate">
+            <svg class="w-4 h-4 inline-block mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            {{ profile.occupation }}
+          </p>
+          {% endif %}
+
+          <div class="mt-3">
+            {% if profile.pk in sent_accepted_ids %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Connected
+              </span>
+            {% elif profile.pk in sent_pending_ids %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Pending</span>
+            {% else %}
+              <form method="post" action="{% url 'matchmaking:send_interest' user_id=profile.user.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-pink-600 rounded-lg hover:from-red-700 hover:to-pink-700 transition">
+                  Send Interest
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <div class="flex items-center justify-between mb-6">
     <h2 class="text-xl font-bold text-gray-800">
-      {% if filters_active %}Search Results{% else %}Browse Profiles{% endif %}
+      All Profiles
       <span class="text-gray-400 text-base font-normal">({{ profiles.paginator.count }} profile{{ profiles.paginator.count|pluralize }})</span>
     </h2>
   </div>
 
-  <!-- Profile grid -->
+  <!-- Profile grid: All Profiles -->
   {% if profiles %}
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
     {% for profile in profiles %}

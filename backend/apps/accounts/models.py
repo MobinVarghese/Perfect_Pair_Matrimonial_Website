@@ -1,10 +1,47 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.utils import timezone
 
 
 class User(AbstractUser):
-    """Custom User model with admin and blocking fields."""
+    """Custom User model with admin, blocking, and subscription fields."""
+
+    SUBSCRIPTION_SILVER = 'silver'
+    SUBSCRIPTION_GOLD = 'gold'
+    SUBSCRIPTION_CHOICES = [
+        (SUBSCRIPTION_SILVER, 'Silver'),
+        (SUBSCRIPTION_GOLD, 'Gold'),
+    ]
+
+    subscription_type = models.CharField(
+        max_length=10,
+        choices=SUBSCRIPTION_CHOICES,
+        default=SUBSCRIPTION_SILVER,
+        help_text='Subscription level of the user.'
+    )
+    subscription_start = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the current subscription started.'
+    )
+    subscription_end = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the current subscription ends.'
+    )
+
+    deactivated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the account was deactivated.'
+    )
+    scheduled_deletion_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the account is scheduled for permanent deletion.'
+    )
+
     is_admin = models.BooleanField(
         default=False,
         help_text='Designates whether the user is an admin.'
@@ -28,6 +65,27 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    def ensure_subscription_valid(self, save=True):
+        """Automatically downgrade expired Gold subscriptions to Silver."""
+        if self.subscription_type == self.SUBSCRIPTION_GOLD and self.subscription_end:
+            now = timezone.now()
+            if self.subscription_end <= now:
+                self.subscription_type = self.SUBSCRIPTION_SILVER
+                self.subscription_start = None
+                self.subscription_end = None
+                if save:
+                    self.save(update_fields=['subscription_type', 'subscription_start', 'subscription_end'])
+        return self.subscription_type
+
+    def has_active_gold_subscription(self):
+        """Return True if the user currently has an active Gold subscription."""
+        self.ensure_subscription_valid(save=True)
+        if self.subscription_type != self.SUBSCRIPTION_GOLD:
+            return False
+        if not self.subscription_end:
+            return False
+        return self.subscription_end > timezone.now()
 
 
 class PasswordResetRequest(models.Model):

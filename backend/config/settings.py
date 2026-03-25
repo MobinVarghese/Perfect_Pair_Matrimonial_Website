@@ -57,6 +57,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.core.context_processors.pending_interests_count',
                 'apps.core.context_processors.unread_messages_count',
+                'apps.core.context_processors.preference_completion_alert',
             ],
         },
     },

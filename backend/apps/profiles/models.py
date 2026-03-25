@@ -42,6 +42,43 @@ class Profile(models.Model):
     desired_partner_traits = models.TextField(blank=True, help_text='Desired partner characteristics')
     photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True, help_text='Profile photo')
     mobile_number = models.CharField(max_length=15, unique=True, help_text='Mobile number with country code')
+    preferred_gender = models.CharField(
+        max_length=10,
+        choices=GENDER_CHOICES,
+        blank=True,
+        default='',
+        help_text='Preferred partner gender',
+    )
+    preferred_locations = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Comma-separated preferred locations',
+    )
+    preferred_religions = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Comma-separated preferred religions',
+    )
+    preferred_education = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Comma-separated preferred education levels',
+    )
+    age_min = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(18), MaxValueValidator(100)],
+        help_text='Minimum preferred partner age',
+    )
+    age_max = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(18), MaxValueValidator(100)],
+        help_text='Maximum preferred partner age',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

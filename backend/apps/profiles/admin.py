@@ -55,8 +55,8 @@ class ProfileAdmin(admin.ModelAdmin):
 
         writer = csv.writer(response)
         total = Profile.objects.count()
-        male_count = Profile.objects.filter(gender='M').count()
-        female_count = Profile.objects.filter(gender='F').count()
+        male_count = Profile.objects.filter(gender__iexact='male').count()
+        female_count = Profile.objects.filter(gender__iexact='female').count()
 
         writer.writerow(['=== OVERALL DEMOGRAPHICS ==='])
         writer.writerow(['Metric', 'Count', 'Percentage'])

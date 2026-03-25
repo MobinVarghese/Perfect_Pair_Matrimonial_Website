@@ -53,6 +53,14 @@
           Browse Profiles
         </a>
 
+        <!-- Accepted Interests -->
+        {% if user.is_authenticated %}
+        <a href="{% url 'matchmaking:accepted_interests' %}"
+           class="px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150 font-medium text-sm">
+          Accepted Interests
+        </a>
+        {% endif %}
+
         <!-- Favorites -->
         <a href="{% url 'interactions:favorites' %}"
            class="px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition duration-150"
@@ -116,6 +124,25 @@
         </a>
         {% endif %}
 
+        <!-- Subscription badge + upgrade (desktop) -->
+        {% if user.is_authenticated %}
+        <div class="flex items-center space-x-2 mr-4">
+          {% if user.subscription_type == 'gold' %}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+            GOLD
+          </span>
+          {% else %}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">
+            SILVER
+          </span>
+          <a href="{% url 'accounts:upgrade' %}"
+             class="ml-1 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow hover:from-yellow-500 hover:to-orange-600 transition">
+            Upgrade
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
         <!-- User dropdown -->
         <div class="relative" id="user-menu-container">
           <button id="user-menu-btn"
@@ -163,6 +190,27 @@
   <!-- Mobile nav -->
   <div id="mobile-menu" class="hidden md:hidden border-t border-gray-200">
     <div class="px-4 py-3 space-y-1">
+      {% if user.is_authenticated %}
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs text-gray-500">Plan</div>
+        <div class="flex items-center space-x-2">
+          {% if user.subscription_type == 'gold' %}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+            GOLD
+          </span>
+          {% else %}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">
+            SILVER
+          </span>
+          <a href="{% url 'accounts:upgrade' %}"
+             class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow hover:from-yellow-500 hover:to-orange-600 transition">
+            Upgrade
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
       <a href="{% url 'profiles:home' %}"
          class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Browse Profiles</a>
       <a href="{% url 'interactions:favorites' %}"
@@ -185,6 +233,10 @@
         </span>
         {% endif %}
       </a>
+      {% if user.is_authenticated %}
+      <a href="{% url 'matchmaking:accepted_interests' %}"
+         class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Accepted Interests</a>
+      {% endif %}
       <a href="{% url 'feedback:feedback' %}"
          class="block px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition font-medium">Feedback</a>
       {% if user.is_admin %}
@@ -203,6 +255,24 @@
     </div>
   </div>
 </nav>
+
+{% if user.is_authenticated and show_preference_alert %}
+<div class="bg-yellow-50 border-b border-yellow-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between text-sm text-yellow-800">
+    <div class="flex items-center space-x-2">
+      <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M4.93 19h14.14A2 2 0 0021 17.236L13.57 4.63a2 2 0 00-3.14 0L3 17.236A2 2 0 004.93 19z"/>
+      </svg>
+      <span>Complete your preferences (at least 2 choices) to get better recommendations.</span>
+    </div>
+    <a href="{% url 'profiles:edit_profile' %}"
+       class="inline-flex items-center px-3 py-1 rounded-full bg-yellow-400 text-yellow-900 font-semibold text-xs hover:bg-yellow-500 transition">
+      Complete now
+    </a>
+  </div>
+</div>
+{% endif %}
 
 <!-- ═══ FLASH MESSAGES ═══ -->
 {% if messages %}

@@ -26,6 +26,7 @@ class Feedback(models.Model):
     subject = models.CharField(max_length=200, help_text='Brief subject of feedback')
     message = models.TextField(help_text='Detailed feedback message')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    is_public = models.BooleanField(default=False, help_text='Show this feedback as a public testimonial')
     admin_response = models.TextField(blank=True, null=True, help_text='Admin response to feedback')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

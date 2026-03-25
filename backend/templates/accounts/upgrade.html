@@ -1,0 +1,70 @@
+{% extends "base/base_auth.html" %}
+{% block title %}Upgrade Subscription – PerfectPair{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 py-12 px-4">
+  <div class="max-w-md w-full space-y-8 animate-fadeIn">
+    <!-- Header -->
+    <div class="text-center">
+      <div class="mx-auto w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8l3.09 6.26L22 15.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 20.14l-5-4.87 6.91-1.01z" />
+        </svg>
+      </div>
+      <h2 class="text-3xl font-bold text-gray-900">Upgrade Your Plan</h2>
+      <p class="mt-2 text-gray-600">Access premium messaging features with a Gold subscription.</p>
+    </div>
+
+    <!-- Current subscription status -->
+    <div class="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-gray-600">Current Plan</span>
+        {% if request.user.subscription_type == 'gold' %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300">
+            GOLD
+          </span>
+        {% else %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300">
+            SILVER
+          </span>
+        {% endif %}
+      </div>
+
+      {% if request.user.subscription_type == 'gold' and request.user.subscription_end %}
+      <div class="text-sm text-gray-600">
+        <p>Your Gold subscription is active until:</p>
+        <p class="font-semibold text-gray-900 mt-1">{{ request.user.subscription_end|date:"F j, Y, g:i A" }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Gold benefits -->
+      <div class="space-y-2 text-sm text-gray-700">
+        <p class="font-semibold text-gray-900">Gold benefits:</p>
+        <ul class="list-disc list-inside space-y-1">
+          <li>Unlimited messaging with matches</li>
+          <li>Priority visibility in search results</li>
+          <li>Exclusive access to premium features</li>
+        </ul>
+      </div>
+
+      {% if request.user.subscription_type != 'gold' %}
+      <!-- Upgrade button for Silver users -->
+      <form method="post" class="mt-4">
+        {% csrf_token %}
+        <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold rounded-lg shadow-lg hover:from-yellow-500 hover:to-orange-600 transition duration-200">
+          Upgrade to Gold (Dummy Payment)
+        </button>
+      </form>
+      {% else %}
+      <div class="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
+        You are already a <span class="font-semibold">Gold</span> member. Thank you for supporting PerfectPair!
+      </div>
+      {% endif %}
+
+      <div class="mt-4 text-center text-sm">
+        <a href="{% url 'profiles:home' %}" class="text-red-600 hover:text-red-700 font-medium">Back to Profiles</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

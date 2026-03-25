@@ -2,13 +2,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import RedirectView
+from apps.core.views import landing_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Root redirect to login
-    path('', RedirectView.as_view(url='/login/', permanent=False)),
+    # Public landing page
+    path('', landing_view, name='site_landing'),
 
     # App routes
     path('', include('apps.accounts.urls', namespace='accounts')),
